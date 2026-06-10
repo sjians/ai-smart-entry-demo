@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 智能录入</title>
+<!-- 图标字体与样式统一由 src/main.js 以本地依赖方式引入（离线可用、随构建打包），不再依赖 CDN -->
+
+</head>
+<body>
+<div id="app" style="position:relative">
+  <!-- 字段编辑弹窗 -->
+  <div class="edit-modal-bg" id="editModalBg">
+    <div class="edit-modal">
+      <div class="em-title"><i class="ti ti-pencil" id="emIcon"></i><span id="emTitle">编辑字段</span></div>
+      <div id="emBody"></div>
+      <div class="em-acts">
+        <button class="ab" data-action="closeEditModal">取消</button>
+        <button class="ab primary" data-action="saveEditModal">保存</button>
+      </div>
+    </div>
+  </div>
+  <!-- 批量导入弹窗 -->
+  <div class="import-bg" id="importBg">
+    <div class="import-modal">
+      <div class="im-h">批量导入线索</div>
+      <div class="im-sub">支持 Excel / CSV 格式，AI 自动识别并映射字段列</div>
+      <div class="drop-zone" data-action="runImport">
+        <i class="ti ti-file-spreadsheet"></i>
+        <p>点击选择文件，或拖拽至此区域</p>
+        <small>支持 .xlsx · .csv · 最大 10 MB</small>
+      </div>
+      <div class="prog-wrap" id="progWrap">
+        <div class="prog-lbl"><span class="pdot on"></span>AI 正在解析并映射字段…</div>
+        <div class="prog-bar-bg"><div class="prog-bar-fill" id="progFill"></div></div>
+      </div>
+      <div class="im-acts">
+        <button class="ab" data-action="closeImport">取消</button>
+        <button class="ab primary" data-action="runImport"><i class="ti ti-upload" style="font-size:12px"></i> 开始导入</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

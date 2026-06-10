@@ -1,0 +1,14 @@
+{
+  "name": "baidu-ocr-proxy",
+  "private": true,
+  "version": "1.0.0",
+  "description": "百度 OCR 代理（Cloudflare Worker）—— 为 AI 智能录入 Demo 的真实图片识别保管密钥并解决 CORS",
+  "scripts": {
+    "login": "wrangler login",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^3.90.0"
+  }
+}

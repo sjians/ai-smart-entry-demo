@@ -1,0 +1,27 @@
+{
+  "name": "ai-smart-entry-demo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "AI 智能录入 · 对话式 — POC demo agent（线索智能录入）。由交互原型转化为模块化、可测试、可运行的工程。",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "jsdom": "^25.0.1",
+    "vite": "^6.0.7",
+    "vitest": "^2.1.8"
+  },
+  "dependencies": {
+    "@tabler/icons-webfont": "2.44.0",
+    "mammoth": "^1.12.0",
+    "pdfjs-dist": "^4.7.76",
+    "xlsx": "^0.18.5"
+  }
+}
