@@ -11,7 +11,7 @@
 //   2) 给客户分发前，把你的 Worker 地址填到下面这行常量，再 `npm run build`，客户端打开即真·AI。
 //      （或让用户在设置面板里粘贴地址，存进他自己浏览器的 localStorage。）
 
-const BUILT_IN_LLM_PROXY_URL = ''; // ← 部署 worker-llm 后填这里，例如 'https://smart-entry-llm.xxx.workers.dev'
+const BUILT_IN_LLM_PROXY_URL = 'https://smart-entry-llm.sjian-demo.workers.dev'; // 已部署：worker-llm/（密钥在 Worker 端，前端永不暴露）
 const DEFAULT_MODEL = 'deepseek-chat';
 
 function lsGet(key) {

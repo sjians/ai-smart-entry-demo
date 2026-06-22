@@ -40,6 +40,12 @@ function json(obj, status, origin) {
   return new Response(JSON.stringify(obj), { status: status || 200, headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) } });
 }
 
+// 上游有时在出错时返回纯文本（如 "Authentication Fails"）而非 JSON：先取 text 再尝试解析，避免 JSON.parse 抛错把真实报错吞掉
+async function readBody(r) {
+  const raw = await r.text();
+  try { return { raw, data: JSON.parse(raw) }; } catch (_) { return { raw, data: null }; }
+}
+
 function resolveProvider(env) {
   const name = String(env.LLM_PROVIDER || 'deepseek').toLowerCase();
   const prov = PROVIDERS[name] || PROVIDERS.deepseek;
@@ -61,8 +67,9 @@ async function callOpenAICompatible(base, model, key, body) {
     headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
     body: JSON.stringify(payload),
   });
-  const data = await r.json();
-  if (!r.ok) return { ok: false, status: r.status, error: (data && (data.error?.message || data.error || data.message)) || ('上游返回 ' + r.status) };
+  const { raw, data } = await readBody(r);
+  if (!r.ok) return { ok: false, status: r.status, error: (data && (data.error?.message || data.error || data.message)) || raw.slice(0, 300) || ('上游返回 ' + r.status) };
+  if (!data) return { ok: false, status: 502, error: '上游返回非 JSON：' + raw.slice(0, 300) };
   const msg = data.choices && data.choices[0] && data.choices[0].message;
   if (!msg) return { ok: false, status: 502, error: '上游返回缺少 choices[].message' };
   return { ok: true, message: msg };
@@ -128,8 +135,9 @@ async function callAnthropic(base, model, key, body) {
     headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
     body: JSON.stringify(payload),
   });
-  const data = await r.json();
-  if (!r.ok) return { ok: false, status: r.status, error: (data && (data.error?.message || data.error)) || ('上游返回 ' + r.status) };
+  const { raw, data } = await readBody(r);
+  if (!r.ok) return { ok: false, status: r.status, error: (data && (data.error?.message || data.error)) || raw.slice(0, 300) || ('上游返回 ' + r.status) };
+  if (!data) return { ok: false, status: 502, error: '上游返回非 JSON：' + raw.slice(0, 300) };
   return { ok: true, message: fromAnthropic(data) };
 }
 
