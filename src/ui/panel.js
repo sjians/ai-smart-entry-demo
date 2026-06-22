@@ -7,17 +7,21 @@ import { AI_CHAT_EXAMPLES } from '../data/examples.js';
 import { state } from '../state.js';
 import { mkFieldsCard, promptCompletion } from './fields.js';
 import { embSaveFromAi } from './leads.js';
-import { aiChatSend, aiChatUser, aiChatFillFields, aiChatBot } from './chat.js';
+import { aiChatUser, aiChatFillFields, aiChatBot } from './chat.js';
 import { buildPlusMenu, realVoice } from './realInput.js';
+import { aiChatSubmit, resetAgentConversation } from '../agent/agentLoop.js';
+import { renderAgentBadge } from '../agent/settingsModal.js';
 
 export function openEmbAiPanel() {
   const existing = document.getElementById('embAiPanelBg'); if (existing) existing.remove();
   FKEYS.forEach((k) => (F[k] = ''));
+  resetAgentConversation(); /* 每次打开面板 = 一段全新对话，清空 agent 记忆 */
   const bg = d('emb-panel-bg'); bg.id = 'embAiPanelBg';
   const panel = d('emb-panel'); panel.style.width = '1080px';
   const ph = d('emb-panel-head');
   ph.innerHTML = '<div class="emb-panel-title"><i class="ti ti-sparkles"></i>AI 智能录入</div>';
   const closeX = document.createElement('button'); closeX.className = 'emb-panel-close'; closeX.innerHTML = '<i class="ti ti-x"></i> 关闭'; closeX.onclick = closeEmbAiPanel;
+  renderAgentBadge(ph); /* 顶部「真·AI / 规则引擎」状态徽标，点击打开 AI 设置 */
   ph.appendChild(closeX); panel.appendChild(ph);
   panel.style.height = '86vh'; panel.style.maxHeight = '760px';
 
@@ -32,7 +36,7 @@ export function openEmbAiPanel() {
   const inRow = d(''); inRow.style.cssText = 'border-top:1px solid var(--line);padding:12px;display:flex;gap:8px;align-items:flex-end;background:var(--bg2)';
   const ta = document.createElement('textarea'); ta.id = 'aiChatInput'; ta.rows = 4; ta.placeholder = '直接描述线索，或回答 AI 的问题…例如：业主鸿图智造集团，电子设计集采项目，预算3亿，电力行业，联系人林志远13800000001，战略支柱客户'; ta.style.cssText = 'flex:1;font-size:13px;padding:10px 12px;border:0.5px solid var(--line);border-radius:8px;font-family:inherit;outline:none;resize:none;min-height:84px;max-height:160px;line-height:1.6';
   ta.oninput = function () { this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 160) + 'px'; };
-  ta.onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); aiChatSend(); } };
+  ta.onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); aiChatSubmit(); } };
   /* + 导入 与 发送 */
   const plusWrap = d(''); plusWrap.style.cssText = 'position:relative;flex-shrink:0';
   const plusBtn = document.createElement('button'); plusBtn.className = 'mic-btn'; plusBtn.style.cssText = 'width:36px;height:36px'; plusBtn.title = '上传文件 / 图片识别 / 批量 / 语音（真实或示例，二选一）'; plusBtn.innerHTML = '<i class="ti ti-plus"></i>';
@@ -44,7 +48,7 @@ export function openEmbAiPanel() {
   plusWrap.appendChild(plusBtn); plusWrap.appendChild(menu);
   /* 语音输入按钮 */
   const micBtn = document.createElement('button'); micBtn.className = 'mic-btn'; micBtn.id = 'aiChatMic'; micBtn.style.cssText = 'width:36px;height:36px;flex-shrink:0'; micBtn.title = '语音输入（说话实时转写，再点一下结束）'; micBtn.innerHTML = '<i class="ti ti-microphone"></i>'; micBtn.onclick = realVoice;
-  const sendBtn = document.createElement('button'); sendBtn.className = 'mic-btn'; sendBtn.style.cssText = 'width:36px;height:36px;background:var(--clay);color:#fff;flex-shrink:0'; sendBtn.title = '发送'; sendBtn.innerHTML = '<i class="ti ti-send"></i>'; sendBtn.onclick = aiChatSend;
+  const sendBtn = document.createElement('button'); sendBtn.className = 'mic-btn'; sendBtn.style.cssText = 'width:36px;height:36px;background:var(--clay);color:#fff;flex-shrink:0'; sendBtn.title = '发送'; sendBtn.innerHTML = '<i class="ti ti-send"></i>'; sendBtn.onclick = aiChatSubmit;
   inRow.appendChild(plusWrap); inRow.appendChild(ta); inRow.appendChild(micBtn); inRow.appendChild(sendBtn);
   chatCol.appendChild(inRow);
   /* 示例样本：放输入框下方，点选即填入并提取 */

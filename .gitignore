@@ -5,3 +5,4 @@ coverage/
 *.local
 .vite/
 .wrangler/
+dist-single/

@@ -512,6 +512,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 @keyframes pg{0%,100%{opacity:.4}50%{opacity:1}}
 .pdot.on{background:var(--clay);animation:bk .7s infinite}
 @keyframes bk{0%,100%{opacity:1}50%{opacity:.2}}
+/* 手搓 Agent：思考中转圈 + 顶部状态徽标 */
+@keyframes spin{to{transform:rotate(360deg)}}
+.ti-spin{display:inline-block;animation:spin 1s linear infinite}
+.agent-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 9px;border-radius:20px;cursor:pointer;border:0.5px solid var(--line);user-select:none;transition:background .15s}
+.agent-badge:hover{background:var(--clay-lt)}
+.agent-badge.on{background:var(--sage-lt);border-color:var(--sage);color:var(--sage-dk)}
+.agent-badge.off{background:var(--bg);color:var(--ink3)}
+.agent-badge .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.agent-badge.on .dot{background:var(--sage)}
+.agent-badge.off .dot{background:var(--ink3)}
 
 .hint-strip{padding:10px 14px;background:var(--card);border:0.5px solid var(--line);border-radius:9px;font-size:12px;color:var(--ink3);display:flex;align-items:center;gap:8px}
 .hint-strip i{font-size:14px;color:var(--clay-md);flex-shrink:0}
