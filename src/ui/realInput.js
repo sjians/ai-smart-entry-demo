@@ -18,9 +18,10 @@ import { IMPORT_DATA } from '../data/examples.js';
 import { renderEmbImportPreview, closeImport, openImport } from './importLeads.js';
 import { showToast } from './leads.js';
 import { fileKind, rowsToImportData, batchTemplateCsv } from '../core/fileParse.js';
+import { openKnowledgePanel } from './knowledgePanel.js';
 
 /* ---------- 通用：选文件 / 读取 ---------- */
-function pickFile(accept) {
+export function pickFile(accept) {
   return new Promise((resolve) => {
     const inp = document.createElement('input');
     inp.type = 'file'; if (accept) inp.accept = accept; inp.style.display = 'none';
@@ -66,7 +67,7 @@ async function readDocxText(file) {
   return (res && res.value ? res.value : '').trim();
 }
 
-async function readDocText(file) {
+export async function readDocText(file) {
   const kind = fileKind(file.name);
   if (kind === 'text') return (await file.text()).trim();
   if (kind === 'pdf') return await readPdfText(file);
@@ -276,4 +277,7 @@ export function buildPlusMenu(menu, onClose) {
   menuGroup(menu, '批量导入（多条）');
   menuItem(menu, 'ti-table-import', '上传文件（批量）', '', realBatch, onClose);
   menuItem(menu, 'ti-list-details', '12 条样例数据', 'mock', openImport, onClose);
+
+  menuGroup(menu, '知识库 (RAG)');
+  menuItem(menu, 'ti-books', '管理 / 上传到知识库', 'real', openKnowledgePanel, onClose);
 }

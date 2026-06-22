@@ -141,12 +141,39 @@ async function callAnthropic(base, model, key, body) {
   return { ok: true, message: fromAnthropic(data) };
 }
 
+/* ---------- RAG 向量化：POST /embed { texts:[...] } → { vectors:[[...]], model, dim } ----------
+   用 Cloudflare Workers AI（bge-m3，多语言）。不需要 LLM_API_KEY，只需 [ai] 绑定。
+   前端拿到向量后在浏览器里做余弦检索；Workers AI 不可用时前端自动回落关键词检索。 */
+async function handleEmbed(request, env, origin) {
+  if (!env.AI) return json({ error: 'embeddings_unavailable', error_msg: 'Worker 未绑定 Workers AI（wrangler.toml 的 [ai] binding=AI）' }, 501, origin);
+  let body;
+  try { body = await request.json(); } catch (_) { return json({ error: '请求体需为 JSON：{ texts:[...] }' }, 400, origin); }
+  const texts = Array.isArray(body && body.texts) ? body.texts.map((t) => String(t == null ? '' : t)).filter((s) => s.trim()) : [];
+  if (!texts.length) return json({ error: '缺少 texts 数组' }, 400, origin);
+  if (texts.length > 64) return json({ error: '单次最多 64 段（请分批）' }, 413, origin);
+  if (JSON.stringify(texts).length > MAX_BODY_CHARS) return json({ error: '内容过长（体积超限）' }, 413, origin);
+  try {
+    const model = (env.EMBED_MODEL && env.EMBED_MODEL.trim()) || '@cf/baai/bge-m3';
+    const out = await env.AI.run(model, { text: texts });
+    const vectors = out && out.data ? out.data : (Array.isArray(out) ? out : null);
+    if (!vectors || !vectors.length) return json({ error: 'embeddings_failed', error_msg: 'Workers AI 返回异常' }, 502, origin);
+    return json({ vectors, model, dim: vectors[0] ? vectors[0].length : 0 }, 200, origin);
+  } catch (err) {
+    return json({ error: 'embeddings_failed', error_msg: String((err && err.message) || err) }, 502, origin);
+  }
+}
+
 export default {
   async fetch(request, env) {
     const origin = (env.ALLOW_ORIGIN && env.ALLOW_ORIGIN.trim()) || '*';
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(origin) });
-    if (request.method !== 'POST') return json({ error: '仅支持 POST（OpenAI 形状 { messages, tools, model }）' }, 405, origin);
+    if (request.method !== 'POST') return json({ error: '仅支持 POST' }, 405, origin);
     if (env.APP_TOKEN && request.headers.get('x-app-token') !== env.APP_TOKEN) return json({ error: '令牌校验失败' }, 401, origin);
+
+    // 路由：/embed → RAG 向量化（不需 LLM key）；其余 → 对话补全
+    const { pathname } = new URL(request.url);
+    if (pathname.endsWith('/embed')) return handleEmbed(request, env, origin);
+
     if (!env.LLM_API_KEY) return json({ error: '服务端未配置 LLM_API_KEY（用 wrangler secret put 设置）' }, 500, origin);
 
     let body;

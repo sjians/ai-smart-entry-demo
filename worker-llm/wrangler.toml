@@ -4,8 +4,13 @@ compatibility_date = "2024-11-01"
 
 # 非敏感配置写这里；密钥不要写！用命令行加密设置（见 README.md）：
 #   npx wrangler secret put LLM_API_KEY
+# Workers AI 绑定：RAG 知识库的向量化（embedding）用，免费额度 1万 neurons/天，无需第二个 API key
+[ai]
+binding = "AI"
+
 [vars]
 LLM_PROVIDER = "deepseek"      # deepseek | openai | kimi | qwen | zhipu | anthropic | custom
+# EMBED_MODEL = "@cf/baai/bge-m3"   # 可选：RAG 向量模型（默认 bge-m3，多语言/中文友好，1024 维）
 # LLM_MODEL  = "deepseek-chat" # 可选：默认模型（前端没传时用）
 # LLM_BASE_URL = ""            # 可选：provider=custom 时填你的 OpenAI 兼容端点
 # ALLOW_ORIGIN = "https://sjians.github.io"   # 可选：收紧 CORS 到你的页面域名（默认 *）

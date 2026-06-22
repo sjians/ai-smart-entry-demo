@@ -10,12 +10,37 @@ import { TOOLS, runTool } from './tools.js';
 import { buildSystemPrompt } from './systemPrompt.js';
 import { aiChatSend, aiChatBot, aiChatUser } from '../ui/chat.js';
 import { fillFromText } from '../ui/realInput.js';
+import { retrieve } from './knowledge.js';
 
 const MAX_STEPS = 6; // 一轮对话里最多「思考↔工具」往返次数，防止极端情况下死循环
 
 // 对话记忆：模块级数组（面板每次打开时由 resetAgentConversation() 清空，开始一段干净会话）
 let history = [];
 export function resetAgentConversation() { history = []; }
+
+// 本轮检索到的知识库片段拼成的提示词块（每轮对话开始时按用户最新输入重算）
+let knowledgeBlock = '';
+
+/* 把命中的知识库片段拼成提示词块（RAG 的「增强」部分） */
+function formatKnowledge(hits) {
+  if (!hits || !hits.length) return '';
+  const lines = hits.map((h, i) => {
+    const body = h.text.length > 160 ? h.text.slice(0, 160) + '…' : h.text;
+    return `${i + 1}. [${h.cat}] ${body}`;
+  });
+  return '【知识库参考｜来自公司产品/方案/案例/政策库。可据此更准确地填「线索涉及产品分类 / 线索描述」、判断线索级别、或回答客户「你们有没有适合 XX 的方案」。仅在相关时使用，绝不编造库里没有的内容】\n' + lines.join('\n');
+}
+
+/* 在对话区插入一条「已参考知识库」的轻量说明（透明可解释，不做黑盒） */
+function renderKbNote(hits) {
+  const log = document.getElementById('aiChatLog'); if (!log) return;
+  const titles = hits.map((h) => h.title).join('、');
+  const how = hits[0] && hits[0].how === 'lexical' ? '关键词' : '语义';
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:8px;padding-left:34px';
+  row.innerHTML = '<div style="font-size:11px;color:var(--ink3);background:var(--bg2);border:0.5px dashed var(--line);border-radius:8px;padding:5px 9px"><i class="ti ti-books" style="font-size:12px;color:var(--clay-md)"></i> 已参考知识库 ' + hits.length + ' 条（' + how + '检索）：' + titles + '</div>';
+  log.appendChild(row); log.scrollTop = log.scrollHeight;
+}
 
 /* 当前表单快照：作为每轮临时 system 信息注入，让模型即使在「点示例/手动改字段」后也清楚现状（不写入长期 history） */
 function formSnapshotText() {
@@ -29,9 +54,9 @@ function formSnapshotText() {
 }
 
 function buildMessages() {
-  // 单条 system（主提示词 + 当前表单快照），避免个别厂商对多条 system 的兼容差异
+  // 单条 system（主提示词 + 当前表单快照 + 本轮知识库参考），避免个别厂商对多条 system 的兼容差异
   const snap = formSnapshotText();
-  const system = buildSystemPrompt() + (snap ? '\n\n' + snap : '');
+  const system = buildSystemPrompt() + (snap ? '\n\n' + snap : '') + (knowledgeBlock ? '\n\n' + knowledgeBlock : '');
   const msgs = [{ role: 'system', content: system }];
   for (const m of history) msgs.push(m);
   return msgs;
@@ -61,6 +86,12 @@ export async function runAgentTurn() {
   aiChatUser(text);
   inp.value = ''; inp.style.height = 'auto';
   history.push({ role: 'user', content: text });
+
+  // —— RAG：按用户最新输入检索知识库，命中则注入提示词并在对话区标注（失败不影响主流程）——
+  let hits = [];
+  try { hits = await retrieve(text, 4); } catch (_) { hits = []; }
+  knowledgeBlock = formatKnowledge(hits);
+  if (hits.length) renderKbNote(hits);
 
   const typing = showTyping();
   try {
